@@ -331,7 +331,7 @@ display_thread_sched_attr(char *msg)
 
   s = pthread_getschedparam(pthread_self(), &policy, &param);
   if (s != 0)
-      handle_error_en(s, "pthread_getschedparam");
+    handle_error_en(s, "pthread_getschedparam");
 
   printf("%s\n", msg);
   display_sched_attr(policy, &param);
@@ -349,11 +349,11 @@ nanosleep_helper(long nsec)
    
    asm volatile
    (
-       "syscall"
-       : "=a" (ret)
-       /*                      RDI      RSI     */
-       : "0"(__NR_nanosleep), "D"(&req), "S"(&rem)
-       : "rcx", "r11", "memory"
+     "syscall"
+     : "=a" (ret)
+     /*                      RDI      RSI     */
+     : "0"(__NR_nanosleep), "D"(&req), "S"(&rem)
+     : "rcx", "r11", "memory"
    );
    return ret;
 }

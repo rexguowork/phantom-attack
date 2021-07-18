@@ -26,8 +26,6 @@
 #include <sys/ioctl.h>
 /* POLLER */
 #include <poll.h>
-/* nanosleep */
-#include <time.h>
 /* compile without -m32 for 64 bit call numbers */
 #include <asm/unistd.h>      
 /* AF_INET */
@@ -331,27 +329,6 @@ display_thread_sched_attr(char *msg)
 }
 
 
-FORCE_INLINE int 
-nanosleep_helper(long nsec)
-{
-   struct timespec req, rem;
-   req.tv_sec = 0;
-   req.tv_nsec = nsec;
-
-   ssize_t ret;
-   
-   asm volatile
-   (
-       "syscall"
-       : "=a" (ret)
-       /*                      RDI      RSI  */
-       : "0"(__NR_nanosleep), "D"(&req), "S"(&rem)
-       : "rcx", "r11", "memory"
-   );
-   /* note: no error check to saves cycles */
-   return ret;
-}
-
 FORCE_INLINE void 
 do_connect(struct sockaddr_in *serv_addr) 
 {
@@ -369,7 +346,9 @@ do_connect(struct sockaddr_in *serv_addr)
     exit(1);
   }
 
-  server = gethostbyname("1.1.1.1");
+  /* any valid ip address should work */
+  const char an_ip[] = "1.1.1.1";
+  server = gethostbyname(an_ip);
 
   if (server == NULL) {
     fprintf(stderr,"ERROR, no such host\n");
@@ -466,7 +445,7 @@ main(int argc, char *argv[])
     handle_error_en(s, "pthread_attr_init");
 
   /* set up priority for main thread */
-  int priority = 0;
+  int priority = PRIORITY_MAIN;
   param.sched_priority = priority;
   policy = SCHED_IDLE;
   s = pthread_setschedparam(pthread_self(), SCHED_IDLE, &param);
@@ -477,7 +456,7 @@ main(int argc, char *argv[])
   if (s != 0)
     handle_error_en(s, "pthread_attr_setinheritsched");
   
-  priority = 42;
+  priority = PRIORITY_OVERWRITE;
   policy = SCHED_RR;
   set_child_scheduling(&attr, policy, priority); 
   
@@ -487,7 +466,7 @@ main(int argc, char *argv[])
     handle_error_en(s, "pthread_create");
 
   /* busy delay */
-  busyloop(320000000);
+  busyloop(BUSYLOOP_COUNT);
   /* syscall openat */
   int myfd = open(page, O_CREAT|O_RDWR|O_DIRECT, 0640);
   if (myfd < 0) 
