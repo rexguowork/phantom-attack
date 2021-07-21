@@ -98,7 +98,7 @@ FORCE_INLINE void
 receiver() 
 {
   for(;;) {
-	  pthread_mutex_lock( &condition_mutex );
+    pthread_mutex_lock( &condition_mutex );
     while( count >= COUNT_HALT1 && count <= COUNT_HALT2 )  {
       pthread_cond_wait( &condition_cond, &condition_mutex );
     }
@@ -121,7 +121,7 @@ FORCE_INLINE void
 sender() 
 {
   for(;;) {
-	  pthread_mutex_lock( &condition_mutex );
+    pthread_mutex_lock( &condition_mutex );
     if( count < COUNT_HALT1 || count > COUNT_HALT2 ) {
 	    pthread_cond_signal( &condition_cond );
     }
@@ -482,7 +482,7 @@ main(int argc, char *argv[])
   /* start new thread */
   s = pthread_create(&thread, NULL, &thread_start, NULL);
   if (s != 0)
-      handle_error_en(s, "pthread_create");
+    handle_error_en(s, "pthread_create");
 
   nanosleep_helper(NANOSLEEP_TIME);
   /* connect syscall */
