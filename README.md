@@ -32,7 +32,7 @@ Note that Falco's mitigation is detecting userfaultfd syscall from non-root user
 
 
 ### Platform
-Phantom Attack was tested on the following set up:
+Phantom Attack was tested on the following configurations:
 
 | OS                 | Hypervisior            | CPU Cores |
 | -------------      | ---------------------- | ----------|
@@ -68,8 +68,9 @@ directory, it tries to make agent thinks it is opening a benign looking file wit
 ## Getting Started:
 
 ### To compile:
-`$ cd phantom_v1
- $ make`
+`$ cd phantom_v1`
+
+`$ make`
 
 
 ### Phantom v1 attack on connect system call 
