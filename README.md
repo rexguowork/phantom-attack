@@ -30,7 +30,7 @@ Note that Falco's mitigation is detecting userfaultfd syscall from non-root user
 
 
 ### Platform
-Phantom Attack was tested on the following OS:
+Phantom Attack was tested on the following set up:
 
 | OS                 | Hypervisior            | CPU Cores |
 | -------------      | ---------------------- | ----------|
