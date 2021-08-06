@@ -21,6 +21,22 @@ trigger detection alerts.
 This github project hosts the POC code for Phantom Attack. More details can be
 found in our [DEFCON 29 talk](https://defcon.org/html/defcon-29/dc-29-speakers.html#guo).
 
+## Evaluation 
+
+### Target Software
+Falco older than v0.29.1. Tracee older than v0.4.0. 
+
+Note that Falco's mitigation is detecting userfaultfd syscall from non-root user, so you may still be able to perform the TOCTOU on newer versions but it will get detected because of the use of userfaultfd. We did not evaluate newer version of Tracee and they may still be vulnerable.
+
+
+### Platform
+Phantom Attack was tested on the following OS:
+
+| OS                 | Hypervisior            | CPU Cores |
+| -------------      | ---------------------- | ----------|
+| Ubuntu 20.04       | wmware workstation pro | 4 cores   |
+| Ubuntu 18.04       | vmware workstation pro | 2 cores   |
+
 ## Files 
 ```bash
 .
@@ -89,5 +105,8 @@ runs.
 
 ### Phantom v2 attack on file link
 
-`$ cd phantom_v2
- $ ./run.sh`
+1. run system call monitoring software and monitor openat syscall
+
+2. run commands below
+`$ cd phantom_v2`
+`$ ./run.sh`
