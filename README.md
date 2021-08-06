@@ -93,18 +93,21 @@ directory, it tries to make agent thinks it is opening a benign looking file wit
 ### Phantom v1 attack on openat system call 
 
 You can run the attack manually and inspect the file artifact and
-system call monitoring software results manually. Since sometimes the overwrite thread writes
-the filename too fast, syscall will only opens the benign file. So you may want
-to run the attack in a loop to automatically check the results for multiple
-runs.
+system call monitoring software results manually. 
+
+NOTE: Since sometimes the overwrite thread writes the filename faster than the kernel thread, syscall will only opens the benign file. 
+So you may want to run the attack in a loop to automatically check the results for multiple runs as demonstrated in the DEFCON talk.
 
 1. run system call monitoring software and monitor openat syscall
 
-2. run the attack_openat. Need CAP_SYS_NICE
+2. You will most likely need CAP_SYS_NICE
 
+`$ ./run.sh attack_openat`
+
+3. Run the attack
 `$ ./attack_openat`
 
-3. check whether the file created is diff from the file reported by the agent
+4. check whether the file created is diff from the file reported by the agent
 
 ### Phantom v2 attack on file link
 
