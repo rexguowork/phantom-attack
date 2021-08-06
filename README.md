@@ -108,5 +108,7 @@ runs.
 1. run system call monitoring software and monitor openat syscall
 
 2. run commands below
+
 `$ cd phantom_v2`
+
 `$ ./run.sh`
