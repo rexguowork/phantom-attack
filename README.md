@@ -36,8 +36,10 @@ Phantom Attack was tested on the following configurations:
 
 | OS                 | Hypervisior            | CPU Cores |
 | -------------      | ---------------------- | ----------|
-| Ubuntu 20.04       | wmware workstation pro | 4 cores   |
-| Ubuntu 18.04       | vmware workstation pro | 2 cores   |
+| Ubuntu 20.04       | wmware workstation pro | 2 cores   |
+| Ubuntu 18.04       | vmware workstation pro | 4 cores   |
+
+If you are testing on 2 cores, remember to change the CPU mask in the POC.
 
 ## Files 
 ```bash
@@ -56,13 +58,13 @@ Phantom Attack was tested on the following configurations:
 attack_connect.c:
 POC attack code on evading the connect call monitoring
 The attack program connect to 1.1.1.1, it tries to make the agent thinks it is
-connecting to any benign looking IP. E.g., 13.107.42.14
-
+connecting to any benign looking IP. E.g., 13.107.42.14. The interrupt used is IPI interrupt.
 
 attack_openat.c:
 POC attack code on evading the openat call monitoring
 The attack program opens file with name "malicious_file" in the current working
 directory, it tries to make agent thinks it is opening a benign looking file with name "benign_file". 
+The interrupt used is hardware interrupt so you need to identify the CPU core that handles the ethernet hardware interrupt on your set up and change the VICTIM_CPU accordingly.
 
 
 ## Getting Started:

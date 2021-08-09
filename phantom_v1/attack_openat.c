@@ -390,6 +390,7 @@ thread_start(void *arg)
   }
   return NULL;
 #endif 
+  /* trigger hardware interrupt */
   struct sockaddr_in sock_addr;
   do_connect(&sock_addr);
 }
