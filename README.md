@@ -19,7 +19,10 @@ suspicious system calls reveal additional information to the defenders and can
 trigger detection alerts.
 
 This github project hosts the POC code for Phantom Attack. More details can be
-found in our [DEFCON 29 talk](https://defcon.org/html/defcon-29/dc-29-speakers.html#guo).
+found in :
+1. [DEFCON 29 website](https://defcon.org/html/defcon-29/dc-29-speakers.html#guo) 
+2. [DEFCON 29 slides](Phantom_attack_evading_system_call_monitoring.pdf)
+3. [DEFCON 29 youtube recording](https://www.youtube.com/watch?v=yaAdM8pWKG8&ab_channel=DEFCONConference)
 
 ## Evaluation 
 
@@ -51,6 +54,7 @@ If you are testing on 2 cores, remember to change the CPU mask in the POC.
 │   └── run.sh           ---------------------------# add CAP_SYS_NICE for binary (e.g., openat)
 ├── phantom_v2
 │   └── run.sh           ---------------------------# phantom v2 attack on file link
+├── Phantom attack evading system call monitoring.pdf ---# DEFCON 29 slides
 ├── README.md
 └── LICENSE
 ```
