@@ -84,7 +84,9 @@ $ make
 1. open one terminal and use tcpdump to monitor the traffic to port 80. Change the
    ethernet interface based on your machine in the command below
 
-`$ sudo tcpdump -i ens33 port 80`
+```console
+$ sudo tcpdump -i ens33 port 80
+```
 
 
 2. run the syscall monitoring software to monitor connect call
