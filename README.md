@@ -95,7 +95,9 @@ $ sudo tcpdump -i ens33 port 80
 3. run the attack and see the tcpdump will report traffic to 1.1.1.1 while
    sysdig open source agent will report attack_connect program connect to 13.107.42.14
 
-`$ ./attack_connect`
+```console
+$ ./attack_connect
+```
 
 
 ### Phantom v1 attack on openat system call 
@@ -110,10 +112,14 @@ So you may want to run the attack in a loop to automatically check the results f
 
 2. You will most likely need CAP_SYS_NICE
 
-`$ ./run.sh attack_openat`
+```console
+$ ./run.sh attack_openat
+```
 
 3. Run the attack
-`$ ./attack_openat`
+```console
+$ ./attack_openat
+```
 
 4. check whether the file created is diff from the file reported by the agent
 
@@ -122,7 +128,7 @@ So you may want to run the attack in a loop to automatically check the results f
 1. run system call monitoring software and monitor openat syscall
 
 2. run commands below
-
-`$ cd phantom_v2`
-
-`$ ./run.sh`
+```console
+$ cd phantom_v2
+$ ./run.sh
+```
