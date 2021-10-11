@@ -74,10 +74,10 @@ The interrupt used is hardware interrupt so you need to identify the CPU core th
 ## Getting Started:
 
 ### To compile:
-`$ cd phantom_v1`
-
-`$ make`
-
+```console
+$ cd phantom_v1
+$ make
+```
 
 ### Phantom v1 attack on connect system call 
 
