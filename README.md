@@ -19,20 +19,31 @@ suspicious system calls reveal additional information to the defenders and can
 trigger detection alerts.
 
 This github project hosts the POC code for Phantom Attack. More details can be
-found in :
-1. [DEFCON 29 website](https://defcon.org/html/defcon-29/dc-29-speakers.html#guo) 
-2. [DEFCON 29 slides](Phantom_attack_evading_system_call_monitoring.pdf)
-3. [DEFCON 29 youtube recording](https://www.youtube.com/watch?v=yaAdM8pWKG8&ab_channel=DEFCONConference)
+found in:
+
+#### Phantom Attack v1 (userfaultfd + IPI + synchronization) and v2 (semantic confusion)
+1. [2021 DEFCON 29 website](https://defcon.org/html/defcon-29/dc-29-speakers.html#guo) 
+2. [2021 DEFCON 29 slides](Phantom_attack_evading_system_call_monitoring.pdf)
+3. [2021 DEFCON 29 youtube recording](https://www.youtube.com/watch?v=yaAdM8pWKG8&ab_channel=DEFCONConference)
+
+#### Phantom Attack v3 (Blocking system call) and v4 (sys_enter)
+4. [2022 Blackhat 25 website](https://www.blackhat.com/us-22/briefings/schedule/index.html#trace-me-if-you-can-bypassing-linux-syscall-tracing-26427)
+5. [2022 DEFCON 30 website](https://forum.defcon.org/node/241839)
+See the phantom_v3 and phantom_v4 directories for more details
 
 ## Evaluation 
 
 ### Target Software
+
+#### Phantom Attack v1 and v2
 [Falco](https://github.com/falcosecurity/falco) < v0.29.1 
 
 [Tracee](https://github.com/aquasecurity/tracee) <= v0.4.0 
 
 Note that Falco's mitigation is detecting userfaultfd syscall from non-root user, so you may still be able to perform the TOCTOU on newer versions but it will get detected because of the use of userfaultfd. We did not evaluate newer version of Tracee and they may still be vulnerable.
 
+#### Phantom Attack v3 
+[Falco](https://github.com/falcosecurity/falco) < v0.31.1
 
 ### Platform
 Phantom Attack was tested on the following configurations:
@@ -42,7 +53,7 @@ Phantom Attack was tested on the following configurations:
 | Ubuntu 20.04       | wmware workstation pro | 2 cores   |
 | Ubuntu 18.04       | vmware workstation pro | 4 cores   |
 
-If you are testing on 2 cores, remember to change the CPU mask in the POC.
+If you are testing phantom attack v1 on 2 cores, remember to change the CPU mask in the POC.
 
 ## Files 
 ```bash
@@ -54,17 +65,27 @@ If you are testing on 2 cores, remember to change the CPU mask in the POC.
 │   └── run.sh           ---------------------------# add CAP_SYS_NICE for binary (e.g., openat)
 ├── phantom_v2
 │   └── run.sh           ---------------------------# phantom v2 attack on file link
-├── Phantom attack evading system call monitoring.pdf ---# DEFCON 29 slides
+├── phantom_v3
+│   ├── README.md        ---------------------------# Details for Blackhat 25/DEFCON 30 blocking sysall bypass
+│   ├── file             ---------------------------# phantom v3 attack on file systems
+│   └── networking       ---------------------------# phantom v3 attack on connect
+├── phantom_v4
+│   ├── phantomv4.c      ---------------------------# phantom v4 attack on creat
+│   ├── ptracer.c        ---------------------------# simple plain mode ptracer
+│   ├── README.md        ---------------------------# Details for Blackhat 25/DEFCON 30 sys_enter bypass
+│   ├── Makefile         
+│   └── run.sh           ---------------------------# phantom v4 demo script
+├── DC29_Phantom_attack_evading_system_call_monitoring.pdf ---# DEFCON 29 slides
 ├── README.md
 └── LICENSE
 ```
 
-attack_connect.c:
+phantom_v1/attack_connect.c:
 POC attack code on evading the connect call monitoring
 The attack program connect to 1.1.1.1, it tries to make the agent thinks it is
 connecting to any benign looking IP. E.g., 13.107.42.14. The interrupt used is IPI interrupt.
 
-attack_openat.c:
+phantom_v1/attack_openat.c:
 POC attack code on evading the openat call monitoring
 The attack program opens file with name "malicious_file" in the current working
 directory, it tries to make agent thinks it is opening a benign looking file with name "benign_file". 
