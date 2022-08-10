@@ -21,12 +21,12 @@ trigger detection alerts.
 This github project hosts the POC code for Phantom Attack. More details can be
 found in:
 
-#### Phantom Attack v1 and v2
+#### Phantom Attack v1 (userfaultfd + IPI + synchronization) and v2 (semantic confusion)
 1. [2021 DEFCON 29 website](https://defcon.org/html/defcon-29/dc-29-speakers.html#guo) 
 2. [2021 DEFCON 29 slides](Phantom_attack_evading_system_call_monitoring.pdf)
 3. [2021 DEFCON 29 youtube recording](https://www.youtube.com/watch?v=yaAdM8pWKG8&ab_channel=DEFCONConference)
 
-#### Phantom Attack v3 and v4
+#### Phantom Attack v3 (Blocking system call) and v4 (sys_enter)
 4. [2022 Blackhat 25 website](https://www.blackhat.com/us-22/briefings/schedule/index.html#trace-me-if-you-can-bypassing-linux-syscall-tracing-26427)
 
 
@@ -41,12 +41,8 @@ found in:
 
 Note that Falco's mitigation is detecting userfaultfd syscall from non-root user, so you may still be able to perform the TOCTOU on newer versions but it will get detected because of the use of userfaultfd. We did not evaluate newer version of Tracee and they may still be vulnerable.
 
-#### Phantom Attack v3 (Blocking system call)
+#### Phantom Attack v3 
 [Falco](https://github.com/falcosecurity/falco) < v0.31.1
-
-#### Phantom Attack v4 (sys_enter)
-[Pdig](https://github.com/falcosecurity/pdig)
-
 
 ### Platform
 Phantom Attack was tested on the following configurations:
@@ -56,7 +52,7 @@ Phantom Attack was tested on the following configurations:
 | Ubuntu 20.04       | wmware workstation pro | 2 cores   |
 | Ubuntu 18.04       | vmware workstation pro | 4 cores   |
 
-If you are testing on 2 cores, remember to change the CPU mask in the POC.
+If you are testing phantom attack v1 on 2 cores, remember to change the CPU mask in the POC.
 
 ## Files 
 ```bash
