@@ -1,4 +1,4 @@
-# Phantom Attack: Evading System Call Monitoring
+# Phantom Attack: Syscall monitoring/tracing bypass  
 
 Phantom attack is a collection of attacks that evade Linux system call
 monitoring. A user mode program does not need any special privileges or
