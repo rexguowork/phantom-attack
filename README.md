@@ -28,7 +28,8 @@ found in:
 
 #### Phantom Attack v3 (Blocking system call) and v4 (sys_enter)
 4. [2022 Blackhat 25 website](https://www.blackhat.com/us-22/briefings/schedule/index.html#trace-me-if-you-can-bypassing-linux-syscall-tracing-26427)
-
+5. [2022 DEFCON 30 website](https://forum.defcon.org/node/241839)
+See the phantom_v3 and phantom_v4 directories for more details
 
 ## Evaluation 
 
@@ -65,11 +66,15 @@ If you are testing phantom attack v1 on 2 cores, remember to change the CPU mask
 ├── phantom_v2
 │   └── run.sh           ---------------------------# phantom v2 attack on file link
 ├── phantom_v3
-│   ├── README.md        ---------------------------# Details for Blackhat 25 blocking sysall bypass
+│   ├── README.md        ---------------------------# Details for Blackhat 25/DEFCON 30 blocking sysall bypass
 │   ├── file             ---------------------------# phantom v3 attack on file systems
 │   └── networking       ---------------------------# phantom v3 attack on connect
 ├── phantom_v4
-│   └── run.sh           ---------------------------# phantom v2 attack on file link
+│   ├── phantomv4.c      ---------------------------# phantom v4 attack on creat
+│   ├── ptracer.c        ---------------------------# simple plain mode ptracer
+│   ├── README.md        ---------------------------# Details for Blackhat 25/DEFCON 30 sys_enter bypass
+│   ├── Makefile         
+│   └── run.sh           ---------------------------# phantom v4 demo script
 ├── DC29_Phantom_attack_evading_system_call_monitoring.pdf ---# DEFCON 29 slides
 ├── README.md
 └── LICENSE
