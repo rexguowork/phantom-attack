@@ -73,7 +73,7 @@ talks to the client machine. In order to compile the ebpf program, check the
 dependency instruction file at server/ebpf/setup_dependencies.org
 
 ```console
-$ cd networking/server/ebpf/syn_drop_v2
+$ cd networking/server/ebpf/traffic_drop
 $ make
 $ sudo ./xdp_load_and_stats --dev ens33 --force --progsec xdp_main1 --skb-mode -D 3
 ```
@@ -88,9 +88,8 @@ $ make
 $ ./tcp_server
 ```
 NOTE: 
-syn_drop contains the hardcoded drop frequency
-syn_drop_v2 allows one to pass in an argument to control the number of packets
-to drop. By default, it will accept the 4th SYN packets for every four SYN packets.
+traffic_drop allows one to pass in an argument to control the number of packets
+to drop. By default, it will accept the 3rd SYN packet for every three SYN packets.
 
 5. login to the client machine (fargate container in the pdig's case)
 6. run the phantomv3_tcp_client. You will need to change the server IP address
