@@ -64,17 +64,23 @@ If you are testing phantom attack v1 on 2 cores, remember to change the CPU mask
 │   └── run.sh           ---------------------------# add CAP_SYS_NICE for binary (e.g., openat)
 ├── phantom_v2
 │   └── run.sh           ---------------------------# phantom v2 attack on file link
-├── Phantom attack evading system call monitoring.pdf ---# DEFCON 29 slides
+├── phantom_v3
+│   ├── README.md        ---------------------------# Details for Blackhat 25 blocking sysall bypass
+│   ├── file             ---------------------------# phantom v3 attack on file systems
+│   └── networking       ---------------------------# phantom v3 attack on connect
+├── phantom_v4
+│   └── run.sh           ---------------------------# phantom v2 attack on file link
+├── DC29_Phantom_attack_evading_system_call_monitoring.pdf ---# DEFCON 29 slides
 ├── README.md
 └── LICENSE
 ```
 
-attack_connect.c:
+phantom_v1/attack_connect.c:
 POC attack code on evading the connect call monitoring
 The attack program connect to 1.1.1.1, it tries to make the agent thinks it is
 connecting to any benign looking IP. E.g., 13.107.42.14. The interrupt used is IPI interrupt.
 
-attack_openat.c:
+phantom_v1/attack_openat.c:
 POC attack code on evading the openat call monitoring
 The attack program opens file with name "malicious_file" in the current working
 directory, it tries to make agent thinks it is opening a benign looking file with name "benign_file". 
